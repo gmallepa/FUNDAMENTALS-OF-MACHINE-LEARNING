@@ -1,0 +1,136 @@
+---
+title: "Untitled"
+author: "gowtham chakri/811240979"
+date: '2022-12-08'
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+---
+title: "gowtham.final"
+author: "gowtham chakri/811240979"
+date: '2022-12-08'
+output: pdf_document
+---
+
+```{r}
+#loading all the libraries
+
+library(tidyverse)
+library(factoextra)
+library(class)
+library(dplyr)
+library(caret)
+```
+
+
+```{r}
+#loading the datasets
+data_1=read.csv("C:/Users/desineni/Downloads/fuel_receipts_costs_eia923.csv")
+summary(data_1)
+
+```
+
+
+```{r}
+#selecting the rows for developing model 
+
+data<-data_1[ , c(15,16,18)]
+summary(data)
+map(data,~sum(is.na(.)))
+nrow(data)
+```
+
+
+```{r}
+#dealing with missing values
+data$ash_content_pct [is.na(data$ash_content_pct )]<-median(data$ash_content_pct , na.rm = T)
+                                                                    
+#creating data partition 
+
+set.seed(0088)
+trail<-createDataPartition(data$ash_content_pct,p=0.02,list=FALSE)
+trail_dataset<-data[trail,]
+ncol(trail_dataset)
+nrow(trail_dataset)
+```
+
+
+```{r}
+#data partitioning for training and testing
+
+set.seed(0088)
+division<-createDataPartition(trail_dataset$ash_content_pct,p=0.75,list = FALSE)
+trainset<-trail_dataset[division,]
+testset<-trail_dataset[-division,]
+nrow(trainset)
+nrow(testset)
+
+```
+
+
+```{r}
+
+normalized_values<-preProcess(trainset ,method = c('center','scale'))
+
+trainset_norm<-predict(normalized_values,trainset)
+
+testset_norm<-predict(normalized_values,testset)
+```
+
+
+```{r}
+summary(trainset)
+summary(trainset_norm)
+```
+
+
+```{r}
+wss_k<-fviz_nbclust(trainset_norm,kmeans,method="wss")
+
+wss_k
+
+silhouette_k<-fviz_nbclust(trainset_norm,kmeans,method="silhouette")
+
+silhouette_k
+```
+
+
+```{r}
+summary(trainset_norm)
+
+kmeans_4<-kmeans(trainset_norm,centers = 4, nstart = 25)
+
+plot_kmeans_4<-fviz_cluster(kmeans_4,data = trainset_norm)
+```
+
+
+```{r}
+plot_kmeans_4
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+final_data<-trainset
+final_data$cluster<-kmeans_4$cluster
+head(final_data)
+
+```
+```{r}
+
+```
+```{r}
+final_data%>%group_by(cluster)%>%
+  summarize(avg_units=mean(fuel_received_units),
+            avg_ash=mean(ash_content_pct),
+            avg_mmbtu=mean(fuel_mmbtu_per_unit))
+```
+
+
